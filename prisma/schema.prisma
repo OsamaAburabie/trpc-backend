@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(255)
+  email         String        @unique
+  photo         String?       @default("default.png")
+  verified      Boolean?      @default(false)
+  password      String
+  role          RoleEnumType? @default(user)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  provider      String?
+  posts         Post[]
+  likes         Like[]
+  product_likes ProductLike[]
+
+  @@map(name: "users")
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(255)
+  content   String   @db.Text
+  published Boolean? @default(false)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  likes Like[]
+
+  @@map(name: "posts")
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@map(name: "likes")
+}
+
+enum RoleEnumType {
+  user
+  admin
+}
+
+model Category {
+  id       Int        @id @default(autoincrement())
+  name     String
+  parent   Category?  @relation("ChildCategories", fields: [parentId], references: [id])
+  parentId Int?
+  children Category[] @relation("ChildCategories")
+  products Product[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  Int
+
+  likes ProductLike[]
+}
+
+model ProductLike {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@map(name: "product_likes")
+}
